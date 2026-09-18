@@ -167,28 +167,35 @@
     <ul id="list"></ul>
   </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 (function () {
-  const STORAGE_KEY = "shopping-list-items";
+  const SUPABASE_URL = "https://fghkmrxamxrdvipegipt.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnaGttcnhhbXhyZHZpcGVnaXB0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk3MjcxNTIsImV4cCI6MjEwNTMwMzE1Mn0.f0mhj5UpQ40VovHBeX_DsYUgbnjW2ezwrSAWBAs76yc";
+  const TABLE = "shopping_items";
+
+  const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
   const input = document.getElementById("item-input");
   const addBtn = document.getElementById("add-btn");
   const list = document.getElementById("list");
   const countText = document.getElementById("count-text");
   const clearCheckedBtn = document.getElementById("clear-checked");
 
-  let items = loadItems();
+  let items = [];
 
-  function loadItems() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) {
-      return [];
+  async function loadItems() {
+    const { data, error } = await client
+      .from(TABLE)
+      .select("*")
+      .order("created_at", { ascending: true });
+    if (error) {
+      console.error(error);
+      countText.textContent = "불러오기 실패";
+      return;
     }
-  }
-
-  function saveItems() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    items = data;
+    render();
   }
 
   function render() {
@@ -229,33 +236,60 @@
     countText.textContent = `${items.length}개 항목 · ${checkedCount}개 체크됨`;
   }
 
-  function addItem() {
+  async function addItem() {
     const text = input.value.trim();
     if (!text) return;
-    items.push({ id: Date.now() + Math.random(), text, checked: false });
     input.value = "";
-    saveItems();
+    const { data, error } = await client
+      .from(TABLE)
+      .insert({ text, checked: false })
+      .select()
+      .single();
+    if (error) {
+      console.error(error);
+      return;
+    }
+    items.push(data);
     render();
     input.focus();
   }
 
-  function toggleItem(id) {
+  async function toggleItem(id) {
     const item = items.find((i) => i.id === id);
-    if (item) item.checked = !item.checked;
-    saveItems();
+    if (!item) return;
+    const nextChecked = !item.checked;
+    item.checked = nextChecked;
     render();
+    const { error } = await client.from(TABLE).update({ checked: nextChecked }).eq("id", id);
+    if (error) {
+      console.error(error);
+      item.checked = !nextChecked;
+      render();
+    }
   }
 
-  function deleteItem(id) {
+  async function deleteItem(id) {
+    const prevItems = items;
     items = items.filter((i) => i.id !== id);
-    saveItems();
     render();
+    const { error } = await client.from(TABLE).delete().eq("id", id);
+    if (error) {
+      console.error(error);
+      items = prevItems;
+      render();
+    }
   }
 
-  function clearChecked() {
+  async function clearChecked() {
+    const prevItems = items;
     items = items.filter((i) => !i.checked);
-    saveItems();
     render();
+    const { error } = await client.from(TABLE).delete().eq("checked", true);
+    if (error) {
+      console.error(error);
+      items = prevItems;
+      render();
+    }
   }
 
   addBtn.addEventListener("click", addItem);
@@ -264,7 +298,7 @@
   });
   clearCheckedBtn.addEventListener("click", clearChecked);
 
-  render();
+  loadItems();
 })();
 </script>
 </body>
