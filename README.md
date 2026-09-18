@@ -1,2 +1,24 @@
-# shopping-listapp
-간단한 쇼핑 리스트 웹앱 (HTML/CSS/JS, localStorage 기반)
+# 쇼핑 리스트 앱
+
+간단한 쇼핑 리스트 웹앱입니다. 브라우저의 `localStorage`를 사용해 항목을 저장하며, 별도의 서버나 빌드 과정 없이 바로 사용할 수 있습니다.
+
+## 기능
+
+- 항목 추가 (입력 후 Enter 또는 추가 버튼)
+- 항목 체크/해제
+- 항목 개별 삭제
+- 체크된 항목 일괄 삭제
+- 전체 항목 수 / 체크된 항목 수 표시
+- 새로고침 후에도 데이터 유지 (localStorage)
+
+## 사용 방법
+
+`shopping-list.html` 파일을 브라우저에서 열면 바로 사용할 수 있습니다.
+
+```
+open shopping-list.html
+```
+
+## 기술 스택
+
+- HTML / CSS / JavaScript (바닐라, 프레임워크 없음)
